@@ -1,6 +1,6 @@
 # Eth2 Beacon Chain Explorer
 The explorer provides a comprehensive and easy to use interface for the upcoming Eth2 beacon chain. It makes it easy to view proposed blocks, follow attestations and monitor your staking activity.
-<br>[![Build Status](https://travis-ci.org/mkinney/eth2-beaconchain-explorer.svg?branch=master)](https://travis-ci.org/mkinney/eth2-beaconchain-explorer)
+<br>[![Build Status](https://travis-ci.org/mkinney/eth2-beaconchain-explorer.svg?branch=add-travis-ci)](https://travis-ci.org/mkinney/eth2-beaconchain-explorer)
 
 ## About
 The explorer is built using golang and utilizes a PostgreSQL database for storing and indexing data. In order to avoid the situation we currently have with the Eth1 chain where closed source block explorers dominate the market we decided to make our explorer open source and available for everybody. We run a production instance of the explorer at [beaconcha.in](https://beaconcha.in).

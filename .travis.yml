@@ -22,9 +22,9 @@ notifications:
 
 jobs:
   include:
-    - stage: lint
-      install: skip
-      script: make lint
+#    - stage: lint
+#      install: skip
+#      script: make lint
     - stage: build
       install: skip
       script: make
