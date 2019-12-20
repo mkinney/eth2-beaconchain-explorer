@@ -1,7 +1,7 @@
 version: '2.4'
 services:
 
-  prysm:
+  beaconnode_prysm:
     image: gcr.io/prysmaticlabs/prysm/beacon-chain:latest 
     ports:
       - "4000:4000"
@@ -10,14 +10,14 @@ services:
       - $HOME/prysm-data:/data
     command: --archive --grpc-gateway-port=7000 --datadir=/data
 
-  postgres:
+  postgres_prysm:
     image: postgres
     environment:
       - POSTGRES_PASSWORD=secret
       - POSTGRES_USER=explorer
       - POSTGRES_DB=explorer
     volumes:
-    - ./tables.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../tables.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U explorer"]
       interval: 5s
@@ -25,17 +25,19 @@ services:
       retries: 5
 
   explorer:
-    build: .
+    build:
+      context: ../
     ports:
       - "3333:3333"
     links:
-      - postgres
+      - postgres_prysm
+      - beaconnode_prysm
     depends_on:
-      postgres:
+      postgres_prysm:
         condition: service_healthy
-      prysm:
+      beaconnode_prysm:
         condition: service_started
     volumes:
-    - ./config-for-docker-compose.yml:/app/config.yml
+      - ./config-for-docker-compose.yml:/app/config.yml
     command:
       /app/explorer -config /app/config.yml

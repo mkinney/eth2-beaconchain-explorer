@@ -1,0 +1,43 @@
+version: '2.4'
+services:
+
+  beaconnodelighthouse:
+    image: sigp/lighthouse
+#    ports:
+#      - "5052:5052"
+#      - "9000:9000"
+    command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r quick 8 ${EP}
+    restart: on-failure
+
+  postgreslighthouse:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_USER=explorer
+      - POSTGRES_DB=explorer
+    volumes:
+      - ../tables.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U explorer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  explorerlighthouse:
+    build:
+      context: ../
+    ports:
+      - "3334:3334"
+    restart: on-failure
+    links:
+      - postgreslighthouse
+      - beaconnodelighthouse
+    depends_on:
+      postgreslighthouse:
+        condition: service_healthy
+      beaconnodelighthouse:
+        condition: service_started
+    volumes:
+      - ./config-for-docker-compose.yml:/app/config.yml
+    command:
+      /app/explorer -config /app/config.yml
