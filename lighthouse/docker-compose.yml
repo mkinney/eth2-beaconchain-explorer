@@ -5,8 +5,7 @@ services:
     image: sigp/lighthouse
 #    ports:
 #      - "5052:5052"
-#      - "9000:9000"
-    command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r quick 8 ${EP}
+    command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r -t 1000 recent 16
     restart: on-failure
 
   postgreslighthouse:
