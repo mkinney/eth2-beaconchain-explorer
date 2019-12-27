@@ -55,30 +55,6 @@ func Epoch(w http.ResponseWriter, r *http.Request) {
 
 	epochPageData := types.EpochPageData{}
 
-	err = db.DB.Select(&epochPageData.Blocks, `SELECT blocks.slot, 
-											    blocks.proposer, 
-											    blocks.blockroot, 
-											    blocks.parentroot, 
-											    blocks.attestationscount, 
-											    blocks.depositscount, 
-											    blocks.voluntaryexitscount, 
-											    blocks.proposerslashingscount, 
-											    blocks.attesterslashingscount,
-       											blocks.status
-										FROM blocks 
-										WHERE epoch = $1
-										ORDER BY blocks.slot DESC`, epoch)
-
-	if err != nil {
-		logger.Printf("Error retrieving index block data: %v", err)
-		http.Error(w, "Internal server error", 503)
-		return
-	}
-
-	for _, block := range epochPageData.Blocks {
-		block.Ts = utils.SlotToTime(block.Slot)
-	}
-
 	err = db.DB.Get(&epochPageData, `SELECT epoch, 
 											    blockscount, 
 											    proposerslashingscount, 
@@ -96,31 +72,57 @@ func Epoch(w http.ResponseWriter, r *http.Request) {
 										WHERE epoch = $1`, epoch)
 	if err != nil {
 		logger.Printf("Error getting epoch data: %v", err)
-		http.Error(w, "Internal server error", 503)
+		err = epochNotFoundTemplate.ExecuteTemplate(w, "layout", data)
+
+		if err != nil {
+			logger.Fatalf("Error executing template for %v route: %v", r.URL.String(), err)
+		}
 		return
 	}
 
+	err = db.DB.Select(&epochPageData.Blocks, `SELECT blocks.slot, 
+											    blocks.proposer, 
+											    blocks.blockroot, 
+											    blocks.parentroot, 
+											    blocks.attestationscount, 
+											    blocks.depositscount, 
+											    blocks.voluntaryexitscount, 
+											    blocks.proposerslashingscount, 
+											    blocks.attesterslashingscount,
+       											blocks.status
+										FROM blocks 
+										WHERE epoch = $1
+										ORDER BY blocks.slot DESC`, epoch)
+
+	if err != nil {
+		logger.Printf("Error epoch blocks data: %v", err)
+		err = epochNotFoundTemplate.ExecuteTemplate(w, "layout", data)
+
+		if err != nil {
+			logger.Fatalf("Error executing template for %v route: %v", r.URL.String(), err)
+		}
+		return
+	}
+
+	for _, block := range epochPageData.Blocks {
+		block.Ts = utils.SlotToTime(block.Slot)
+	}
+
 	epochPageData.Ts = utils.EpochToTime(epochPageData.Epoch)
-	epochPageData.NextEpoch = epochPageData.Epoch + 1
-	epochPageData.PreviousEpoch = epochPageData.Epoch - 1
 
 	epochPageData.VotedEtherFormatted = fmt.Sprintf("%.2f ETH", float64(epochPageData.VotedEther)/float64(1000000000))
 	epochPageData.EligibleEtherFormatted = fmt.Sprintf("%.2f ETH", float64(epochPageData.EligibleEther)/float64(1000000000))
 	epochPageData.GlobalParticipationRateFormatted = fmt.Sprintf("%.0f", epochPageData.GlobalParticipationRate*float64(100))
+	epochPageData.AverageValidatorBalanceFormatted = fmt.Sprintf("%.2f ETH", float64(epochPageData.AverageValidatorBalance)/float64(1000000000))
 
-	epochs := types.EpochPageMinMaxSlot{}
-	err = db.DB.Get(&epochs, "SELECT MAX(epoch) AS maxepoch, MIN(epoch) as minepoch FROM epochs")
+	err = db.DB.Get(&epochPageData.NextEpoch, "SELECT epoch FROM epochs WHERE epoch > $1 ORDER BY epoch LIMIT 1", epochPageData.Epoch)
 	if err != nil {
-		logger.Printf("Error retrieving block data: %v", err)
-		http.Error(w, "Internal server error", 503)
-		return
-	}
-
-	if epochPageData.NextEpoch > epochs.MaxEpoch {
+		logger.Printf("Error retrieving next epoch for epoch %v: %v", epochPageData.Epoch, err)
 		epochPageData.NextEpoch = 0
 	}
-
-	if epochPageData.PreviousEpoch < epochs.MinEpoch {
+	err = db.DB.Get(&epochPageData.PreviousEpoch, "SELECT epoch FROM epochs WHERE epoch < $1 ORDER BY epoch DESC LIMIT 1", epochPageData.Epoch)
+	if err != nil {
+		logger.Printf("Error retrieving previous epoch for epoch %v: %v", epochPageData.Epoch, err)
 		epochPageData.PreviousEpoch = 0
 	}
 

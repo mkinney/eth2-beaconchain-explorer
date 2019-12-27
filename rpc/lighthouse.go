@@ -189,14 +189,15 @@ func (lc *LighthouseClient) GetEpochData(epoch uint64) (*types.EpochData, error)
 
 	for slot := epoch * utils.Config.Chain.SlotsPerEpoch; slot <= (epoch+1)*utils.Config.Chain.SlotsPerEpoch-1; slot++ {
 
-		if slot == 0 { // Currently slot 0 returns all blocks
+		if slot == 0 || utils.SlotToTime(slot).After(time.Now()) { // Currently slot 0 returns all blocks, also skip asking for future blocks
 			continue
 		}
 
 		blocks, err := lc.GetBlocksBySlot(slot)
 
 		if err != nil {
-			return nil, fmt.Errorf("error retrieving blocks for slot %v: %v", slot, err)
+			logger.Errorf("error retrieving blocks for slot %v: %v", slot, err)
+			continue
 		}
 
 		for _, block := range blocks {
@@ -256,7 +257,15 @@ func (lc *LighthouseClient) GetEpochData(epoch uint64) (*types.EpochData, error)
 
 	data.EpochParticipationStats, err = lc.GetValidatorParticipation(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving epoch participation statistics for epoch %v: %v", epoch, err)
+		logger.Errorf("error retrieving epoch participation statistics for epoch %v: %v", epoch, err)
+
+		data.EpochParticipationStats = &types.ValidatorParticipation{
+			Epoch:                   epoch,
+			Finalized:               false,
+			GlobalParticipationRate: 0,
+			VotedEther:              0,
+			EligibleEther:           0,
+		}
 	}
 
 	return data, nil
@@ -298,6 +307,10 @@ func (lc *LighthouseClient) GetBlocksBySlot(slot uint64) ([]*types.Block, error)
 		Attestations:      make([]*types.Attestation, len(parsedResponse.BeaconBlock.Body.Attestations)),
 		Deposits:          make([]*types.Deposit, len(parsedResponse.BeaconBlock.Body.Deposits)),
 		VoluntaryExits:    make([]*types.VoluntaryExit, len(parsedResponse.BeaconBlock.Body.VoluntaryExits)),
+	}
+
+	if block.Eth1Data.DepositCount > 2147483647 { // Sometimes the lighthouse node does return bogus data for the DepositCount value
+		block.Eth1Data.DepositCount = 0
 	}
 
 	for i, attestation := range parsedResponse.BeaconBlock.Body.Attestations {
