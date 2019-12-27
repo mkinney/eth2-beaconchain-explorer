@@ -3,9 +3,10 @@ services:
 
   beaconnode_lighthouse:
     image: sigp/lighthouse
+    # Note: Temp build docker using "docker build -t sigp/lighthouse ." from testnet3 branch on lighthouse
 #    ports:
 #      - "5052:5052"
-    command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r -t 1000 recent 16
+    command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r quick 8 ${EP}
     restart: on-failure
 
   postgres_lighthouse:
