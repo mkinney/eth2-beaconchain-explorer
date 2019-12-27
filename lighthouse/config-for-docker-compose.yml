@@ -2,7 +2,7 @@
 database:
   user: "explorer"
   name: "explorer"
-  host: "postgreslighthouse"
+  host: "postgres_lighthouse"
   #port: "5432"
   password: "secret"
 
@@ -18,7 +18,7 @@ frontend:
   enabled: true # Enable or disable to web frontend
   imprint: "templates/imprint.example.html" # Path to the imprint page content
   siteName: "Ethereum 2.0 Beacon Chain (Phase 0) Block Chain Explorer" # Name of the site, displayed in the title tag
-  siteSubtitle: "Showing the <a href='https://prylabs.net'>💎 Prysm Eth2 Testnet</a>" # Subtitle shown on the main page
+  siteSubtitle: "Showing the <a href='https://github.com/sigp/lighthouse'>Sigma Prime Lighthouse Eth2 Testnet</a>" # Subtitle shown on the main page
   server:
     host: "0.0.0.0" # Address to listen on
     port: "3334" # Port to listen on
@@ -29,6 +29,6 @@ indexer:
   fullIndexOnStartup: false # Perform a one time full db index on startup
   indexMissingEpochsOnStartup: false # Check for missing epochs and export them after startup
   node:
-    host: "http://beaconnodelighthouse" # Address of the backend node
+    host: "http://beaconnode_lighthouse" # Address of the backend node
     port: "5052" # port of the backend node
     type: "lighthouse" # can be either prysm or lighthouse

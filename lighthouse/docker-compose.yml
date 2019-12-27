@@ -1,14 +1,14 @@
 version: '2.4'
 services:
 
-  beaconnodelighthouse:
+  beaconnode_lighthouse:
     image: sigp/lighthouse
 #    ports:
 #      - "5052:5052"
     command: lighthouse bn --http-address 0.0.0.0 --ws-address 0.0.0.0 --http testnet -r -t 1000 recent 16
     restart: on-failure
 
-  postgreslighthouse:
+  postgres_lighthouse:
     image: postgres
     environment:
       - POSTGRES_PASSWORD=secret
@@ -22,19 +22,19 @@ services:
       timeout: 5s
       retries: 5
 
-  explorerlighthouse:
+  explorer_lighthouse:
     build:
       context: ../
     ports:
       - "3334:3334"
     restart: on-failure
     links:
-      - postgreslighthouse
-      - beaconnodelighthouse
+      - postgres_lighthouse
+      - beaconnode_lighthouse
     depends_on:
-      postgreslighthouse:
+      postgres_lighthouse:
         condition: service_healthy
-      beaconnodelighthouse:
+      beaconnode_lighthouse:
         condition: service_started
     volumes:
       - ./config-for-docker-compose.yml:/app/config.yml
